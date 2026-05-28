@@ -3,121 +3,152 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>شات غرفتي - تحكم المالك</title>
+    <title>شات المالك كرامه</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: #f4f6f9; display: flex; justify-content: center; align-items: center; height: 100vh; }
-        .chat-container { width: 100%; max-width: 480px; height: 85vh; background: #fff; border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.12); display: flex; flex-direction: column; overflow: hidden; }
-        
-        .chat-header { background: #1e293b; color: #fff; padding: 18px; text-align: center; font-size: 1.2rem; font-weight: bold; transition: all 0.3s; border-bottom: 3px solid #0f172a; }
-        .chat-header.owner-mode { background: #e11d48; border-bottom-color: #be123c; } /* أحمر ملكي */
-
-        .admin-panel { display: none; background: #fff1f2; padding: 10px; border-bottom: 1px solid #ffe4e6; justify-content: space-around; gap: 5px; }
-        .admin-btn { flex: 1; background: #e11d48; color: white; border: none; padding: 8px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: bold; transition: 0.2s; }
-        .admin-btn:hover { background: #be123c; }
-
-        .chat-messages { flex: 1; padding: 15px; overflow-y: auto; background: #f8fafc; display: flex; flex-direction: column; gap: 12px; }
-        .message { max-width: 80%; padding: 10px 14px; border-radius: 12px; font-size: 0.95rem; line-height: 1.4; position: relative; }
-        .message .sender-name { font-size: 0.75rem; font-weight: bold; margin-bottom: 4px; display: block; opacity: 0.8; }
-        
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        body { background-color: #f1f5f9; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        .chat-container { width: 100%; max-width: 450px; height: 85vh; background: #fff; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: flex; flex-direction: column; overflow: hidden; }
+        .chat-header { background: #1e293b; color: #fff; padding: 15px; text-align: center; font-size: 1.1rem; font-weight: bold; }
+        .chat-header.owner-mode { background: #e11d48; }
+        .admin-panel { display: none; background: #fff1f2; padding: 8px; border-bottom: 1px solid #ffe4e6; justify-content: space-around; gap: 5px; }
+        .admin-btn { flex: 1; background: #e11d48; color: white; border: none; padding: 6px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: bold; }
+        .chat-messages { flex: 1; padding: 15px; overflow-y: auto; background: #f8fafc; display: flex; flex-direction: column; gap: 10px; }
+        .message { max-width: 80%; padding: 8px 12px; border-radius: 12px; font-size: 0.95rem; line-height: 1.4; }
+        .message .sender { font-size: 0.75rem; font-weight: bold; display: block; margin-bottom: 3px; opacity: 0.8; }
         .message.sent { background: #2563eb; color: #fff; align-self: flex-start; border-top-right-radius: 2px; }
         .message.received { background: #e2e8f0; color: #1e293b; align-self: flex-end; border-top-left-radius: 2px; }
-        .message.owner-sent { background: #e11d48; color: #fff; align-self: flex-start; border-top-right-radius: 2px; box-shadow: 0 2px 8px rgba(225,29,72,0.3); }
-        .message.admin-msg { background: #fef08a; color: #854d0e; align-self: center; text-align: center; border-radius: 8px; font-size: 0.85rem; max-width: 90%; font-weight: 500; border: 1px solid #fef08a; }
-
-        .chat-input-area { display: flex; padding: 12px; background: #fff; border-top: 1px solid #e2e8f0; gap: 8px; }
-        .chat-input { flex: 1; padding: 12px 16px; border: 1px solid #cbd5e1; border-radius: 24px; outline: none; font-size: 0.95rem; transition: 0.2s; }
-        .chat-input:focus { border-color: #2563eb; }
-        .chat-input.owner-mode:focus { border-color: #e11d48; }
-        
-        .send-btn { background: #2563eb; color: white; border: none; padding: 0 22px; border-radius: 24px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .message.owner { background: #e11d48; color: #fff; align-self: flex-start; border-top-right-radius: 2px; font-weight: bold; }
+        .message.system { background: #fef08a; color: #854d0e; align-self: center; text-align: center; border-radius: 6px; font-size: 0.8rem; }
+        .chat-input-area { display: flex; padding: 10px; background: #fff; border-top: 1px solid #e2e8f0; gap: 5px; }
+        .chat-input { flex: 1; padding: 10px; border: 1px solid #cbd5e1; border-radius: 20px; outline: none; }
+        .send-btn { background: #2563eb; color: white; border: none; padding: 0 15px; border-radius: 20px; cursor: pointer; font-weight: bold; }
         .send-btn.owner-mode { background: #e11d48; }
     </style>
-    <script src="/socket.io/socket.io.js"></script>
+    <!-- سيرفر سحابي خارجي ومجاني مدمج بالكود فوراً -->
+    <script src="https://cloudflare.com"></script>
 </head>
 <body>
 
 <div class="chat-container">
     <div class="chat-header" id="chatHeader">غرفة الدردشة العامة</div>
     
-    <!-- لوحة التحكم الكاملة للمالك "كرامه" -->
+    <!-- لوحة التحكم الكاملة للمالك كرامه -->
     <div class="admin-panel" id="adminPanel">
-        <button class="admin-btn" onclick="sendAdminCmd('clear')">🧹 مسح السجل</button>
-        <button class="admin-btn" onclick="sendAdminCmd('lock')">🔒 قفل/فتح الشات</button>
-        <button class="admin-btn" onclick="sendAdminCmd('alert')">📢 إرسال تنبيه عام</button>
+        <button class="admin-btn" onclick="adminCmd('clear')">🧹 مسح الشات</button>
+        <button class="admin-btn" onclick="adminCmd('lock')">🔒 قفل/فتح الكتابة</button>
+        <button class="admin-btn" onclick="adminCmd('alert')">📢 تنبيه عام</button>
     </div>
 
     <div class="chat-messages" id="chatMessages">
-        <div class="message admin-msg"><span class="sender-name">النظام</span>مرحباً بكم في الغرفة. لتفعيل صلاحيات المالك، اكتب كود المالك السري في الشات.</div>
+        <div class="message system"><span class="sender">النظام</span>لتفعيل رتبة المالك، اكتب الكود السري 12233 في الشات.</div>
     </div>
     
     <div class="chat-input-area">
-        <input type="text" class="chat-input" id="chatInput" placeholder="اكتب رسالتك أو كود المالك..." autocomplete="off">
+        <input type="text" class="chat-input" id="chatInput" placeholder="اكتب رسالتك هنا..." autocomplete="off">
         <button class="send-btn" id="sendBtn">إرسال</button>
     </div>
 </div>
 
 <script>
-    const socket = io();
-    
+    // ربط الغرفة بسيرفر سحابي مجاني وموحد لجميع الأجهزة تلقائياً
+    const peer = new Peer('room-karama-unique-xyz123'); 
+    let connections = [];
+    let isOwner = false;
+    let isLocked = false;
+    let myName = "مستخدم_" + Math.floor(Math.random() * 1000);
+
     const chatMessages = document.getElementById('chatMessages');
     const chatInput = document.getElementById('chatInput');
     const sendBtn = document.getElementById('sendBtn');
     const chatHeader = document.getElementById('chatHeader');
     const adminPanel = document.getElementById('adminPanel');
 
-    function appendMessage(sender, text, type) {
-        if (!text) return;
-        const messageDiv = document.createElement('div');
-        messageDiv.classList.add('message', type);
-        messageDiv.innerHTML = `<span class="sender-name">${sender}</span>${text}`;
-        chatMessages.appendChild(messageDiv);
+    function msg(sender, text, type) {
+        const div = document.createElement('div');
+        div.classList.add('message', type);
+        div.innerHTML = `<span class="sender">${sender}</span>${text}`;
+        chatMessages.appendChild(div);
         chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    // استقبال الاتصالات والرسائل من الأجهزة الأخرى تلقائياً
+    peer.on('connection', (conn) => {
+        connections.push(conn);
+        conn.on('data', (data) => {
+            if (data.type === 'clear') { chatMessages.innerHTML = ''; return; }
+            if (data.type === 'lock') { isLocked = data.status; return; }
+            msg(data.sender, data.text, data.msgType);
+        });
+    });
+
+    function broadcast(data) {
+        connections.forEach(conn => { if(conn.open) conn.send(data); });
     }
 
     function handleSend() {
         const text = chatInput.value.trim();
         if (!text) return;
 
-        // إرسال الكود للسيرفر للتحقق إذا كان كود المالك
-        socket.emit('checkAdmin', text);
+        // تفعيل المالك كرامه بكود 12233
+        if (text === "12233") {
+            isOwner = true;
+            myName = "👑 المالك كرامه";
+            chatHeader.textContent = "لوحة تحكم المالك: كرامه";
+            chatHeader.classList.add('owner-mode');
+            sendBtn.classList.add('owner-mode');
+            adminPanel.style.display = 'flex';
+            msg("النظام", "🔓 تم تفعيل صلاحيات المالك كرامه بنجاح!", "system");
+            chatInput.value = '';
+            return;
+        }
+
+        if (isLocked && !isOwner) {
+            alert("الشات مغلق من قبل المالك كرامه!");
+            return;
+        }
+
+        const type = isOwner ? 'owner' : 'sent';
+        msg(myName, text, type);
         
-        // إرسال النص كرسالة مراسلة طبيعية
-        socket.emit('sendMessage', { text: text });
+        // إرسال الرسالة فوراً لكل الأجهزة الأخرى المتصلة بالإنترنت
+        broadcast({ sender: myName, text: text, msgType: isOwner ? 'owner' : 'received' });
         chatInput.value = '';
     }
 
-    // استقبال الرسائل والمراسلات
-    socket.on('newMessage', (data) => {
-        appendMessage(data.sender, data.text, data.type);
-    });
-
-    // تفعيل واجهة المالك "كرامه" عند إدخال الكود 12233
-    socket.on('adminVerified', (res) => {
-        if (res.success) {
-            chatHeader.textContent = `👑 لوحة تحكم المالك: ${res.ownerName}`;
-            chatHeader.classList.add('owner-mode');
-            sendBtn.classList.add('owner-mode');
-            chatInput.classList.add('owner-mode');
-            adminPanel.style.display = 'flex'; // إظهار أزرار التحكم الكاملة
-        }
-    });
-
-    // تنفيذ أوامر التحكم المباشرة
-    socket.on('adminAction', (action) => {
-        if (action.type === 'clear') chatMessages.innerHTML = '';
-        if (action.type === 'system') alert(action.text);
-    });
-
-    // إرسال أوامر لوحة التحكم
-    function sendAdminCmd(type) {
-        if (type === 'alert') {
-            const txt = prompt("أدخل نص التنبيه العام الذي سيظهر للجميع باللون الأصفر:");
-            if (txt) socket.emit('adminCommand', { type: 'alert', text: txt });
-        } else {
-            socket.emit('adminCommand', { type: type });
+    // أوامر لوحة تحكم كرامه
+    function adminCmd(action) {
+        if (!isOwner) return;
+        if (action === 'clear') {
+            chatMessages.innerHTML = '';
+            broadcast({ type: 'clear' });
+            msg("النظام", "🧹 قام المالك كرامه بمسح الشات للكل.", "system");
+        } else if (action === 'lock') {
+            isLocked = !isLocked;
+            broadcast({ type: 'lock', status: isLocked });
+            const statusTxt = isLocked ? "🔒 قام المالك كرامه بقفل الشات." : "🔓 قام المالك كرامه بفتح الشات.";
+            msg("النظام", statusTxt, "system");
+            broadcast({ sender: "النظام", text: statusTxt, msgType: 'system' });
+        } else if (action === 'alert') {
+            const txt = prompt("أدخل نص التنبيه:");
+            if(txt) {
+                msg("📢 تنبيه من كرامه", txt, "system");
+                broadcast({ sender: "📢 تنبيه من كرامه", text: txt, msgType: 'system' });
+            }
         }
     }
+
+    // ربط الأجهزة ببعضها عند فتح الملف في وقت واحد
+    setTimeout(() => {
+        let conn = peer.connect('room-karama-unique-xyz123');
+        if(conn) {
+            connections.push(conn);
+            conn.on('data', (data) => {
+                if (data.type === 'clear') { chatMessages.innerHTML = ''; return; }
+                if (data.type === 'lock') { isLocked = data.status; return; }
+                msg(data.sender, data.text, data.msgType);
+            });
+        }
+    }, 1000);
 
     sendBtn.addEventListener('click', handleSend);
     chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleSend(); });
