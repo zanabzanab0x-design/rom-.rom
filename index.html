@@ -1,52 +1,73 @@
-    <div class="chat-input-area">
-        <input type="text" class="chat-input" id="chatInput" placeholder="اكتب رسالتك هنا..." autocomplete="off">
-        <button class="send-btn" id="sendBtn">إرسال</button>
-    </div>
-</div>
+const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
+const path = require('path');
 
-<script>
-    const chatMessages = document.getElementById('chatMessages');
-    const chatInput = document.getElementById('chatInput');
-    const sendBtn = document.getElementById('sendBtn');
+const app = express();
+const server = http.createServer(app);
+const io = new Server(server);
 
-    // دالة إضافة رسالة جديدة للشاشة
-    function appendMessage(text, type) {
-        if (text.trim() === '') return;
+// إعدادات المالك الحصرية
+const OWNER_CODE = "12233"; 
+const OWNER_NAME = "كرامه";
+let isChatLocked = false;
 
-        const messageDiv = document.createElement('div');
-        messageDiv.classList.add('message', type);
-        messageDiv.textContent = text;
-        
-        chatMessages.appendChild(messageDiv);
-        
-        // التمرير التلقائي لأسفل المحادثة
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-    }
+app.use(express.static(path.join(__dirname, 'public')));
 
-    // معالجة حدث الإرسال
-    function handleSend() {
-        const messageText = chatInput.value;
-        if(messageText.trim() !== "") {
-            appendMessage(messageText, 'sent');
-            chatInput.value = '';
+io.on('connection', (socket) => {
+    // تعريف اسم افتراضي للمستخدم العادي
+    socket.username = "مستخدم_" + socket.id.substring(0, 4);
 
-            // محاكاة رد تلقائي بسيط بعد ثانية واحدة (للردود الواردة)
-            setTimeout(() => {
-                appendMessage("تم استلام رسالتك بنجاح! 👍", 'received');
-            }, 1000);
+    // استقبال الرسائل
+    socket.on('sendMessage', (data) => {
+        // منع المستخدم العادي إذا كان الشات مغلقاً
+        if (isChatLocked && !socket.isOwner) {
+            socket.emit('adminAction', { type: 'system', text: '⚠️ الشات مغلق حالياً من قِبل المالك كرامه!' });
+            return;
         }
-    }
 
-    // تشغيل الإرسال عند النقر على الزر
-    sendBtn.addEventListener('click', handleSend);
-
-    // تشغيل الإرسال عند الضغط على زر Enter
-    chatInput.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            handleSend();
+        // إرسال الرسالة حسب الرتبة
+        if (socket.isOwner) {
+            io.emit('newMessage', { sender: `👑 المالك ${OWNER_NAME}`, text: data.text, type: 'owner-sent' });
+        } else {
+            // إرسال للمرسل بشكل منفصل وللبقية بشكل منفصل للتحكم بالتصميم
+            socket.emit('newMessage', { sender: "أنت", text: data.text, type: 'sent' });
+            socket.broadcast.emit('newMessage', { sender: socket.username, text: data.text, type: 'received' });
         }
     });
-</script>
 
-</body>
-</html>
+    // التحقق من كود المالك
+    socket.on('checkAdmin', (code) => {
+        if (code === OWNER_CODE) {
+            socket.isOwner = true;
+            socket.username = OWNER_NAME;
+            socket.emit('adminVerified', { success: true, ownerName: OWNER_NAME });
+            io.emit('newMessage', { sender: "النظام", text: `🔓 سجل المالك (${OWNER_NAME}) دخوله للتحكم بالغرفة.`, type: 'admin-msg' });
+        } else {
+            socket.emit('adminVerified', { success: false });
+        }
+    });
+
+    // لوحة التحكم بكامل الصلاحيات
+    socket.on('adminCommand', (action) => {
+        if (!socket.isOwner) return; // حماية السيرفر
+
+        if (action.type === 'clear') {
+            io.emit('adminAction', { type: 'clear' });
+            io.emit('newMessage', { sender: "النظام", text: `🧹 قام المالك ${OWNER_NAME} بمسح سجل المحادثات للجميع.`, type: 'admin-msg' });
+        } 
+        else if (action.type === 'lock') {
+            isChatLocked = !isChatLocked;
+            const statusText = isChatLocked ? `🔒 قام المالك ${OWNER_NAME} بقفل المحادثة.` : `🔓 قام المالك ${OWNER_NAME} بفتح المحادثة للجميع.`;
+            io.emit('newMessage', { sender: "النظام", text: statusText, type: 'admin-msg' });
+        } 
+        else if (action.type === 'alert') {
+            io.emit('newMessage', { sender: `📢 تنبيه من المالك ${OWNER_NAME}`, text: action.text, type: 'admin-msg' });
+        }
+    });
+});
+
+const PORT = 3000;
+server.listen(PORT, () => {
+    console.log(`🚀 السيرفر يعمل بنجاح على: http://localhost:${PORT}`);
+});
