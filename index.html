@@ -3,21 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>شات غرف كرامه - التحكم الكامل</title>
+    <title>شات غرف كرامه المميز</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
         body { background: linear-gradient(135deg, #0f172a, #1e293b); display: flex; justify-content: center; align-items: center; height: 100vh; color: #fff; overflow: hidden; }
         
-        /* شاشة الدخولية */
         #loginScreen { background: rgba(30, 41, 59, 0.9); padding: 30px; border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); width: 100%; max-width: 400px; text-align: center; border: 1px solid rgba(255,255,255,0.1); }
         #loginScreen h2 { margin-bottom: 20px; color: #38bdf8; font-size: 1.8rem; }
         .login-input { width: 100%; padding: 12px 20px; border-radius: 25px; border: 1px solid #475569; background: #0f172a; color: #fff; outline: none; font-size: 1rem; margin-bottom: 20px; text-align: center; }
         .login-btn { width: 100%; padding: 12px; border-radius: 25px; border: none; background: linear-gradient(90deg, #0284c7, #38bdf8); color: white; font-size: 1.1rem; font-weight: bold; cursor: pointer; }
 
-        /* الشات الرئيسي */
         #appScreen { display: none; width: 100%; max-width: 900px; height: 85vh; background: #1e293b; border-radius: 16px; box-shadow: 0 12px 40px rgba(0,0,0,0.5); overflow: hidden; border: 1px solid rgba(255,255,255,0.05); }
         
-        /* القائمة الجانبية */
         .sidebar { width: 30%; background: #0f172a; padding: 15px; display: flex; flex-direction: column; gap: 10px; border-left: 1px solid rgba(255,255,255,0.05); }
         .sidebar h3 { font-size: 1.1rem; padding: 10px; color: #94a3b8; border-bottom: 1px solid #1e293b; }
         .room-btn { padding: 12px; background: #1e293b; border: none; border-radius: 10px; color: #cbd5e1; text-align: right; cursor: pointer; font-size: 0.95rem; font-weight: 500; }
@@ -25,19 +22,15 @@
         .room-btn.karama-special { border-right: 4px solid #e11d48; }
         .room-btn.karama-special:hover, .room-btn.karama-special.active { background: #e11d48; color: #fff; }
 
-        /* منطقة الشات */
         .chat-area { flex: 1; display: flex; flex-direction: column; background: #111827; }
         .chat-header { background: #1e293b; padding: 15px 20px; font-size: 1.2rem; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.05); }
         .chat-header.owner-mode { background: #e11d48; }
 
-        /* لوحة التحكم الشاملة للمالك كرامه */
-        #adminPanel { display: none; background: #881337; padding: 8px 15px; justify-content: space-around; gap: 8px; flex-wrap: wrap; }
-        .admin-btn { background: #e11d48; color: white; border: 1px solid rgba(255,255,255,0.2); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: bold; }
-        .admin-btn:hover { background: #b91c1c; }
+        #adminPanel { display: none; background: #881337; padding: 8px 15px; justify-content: space-around; gap: 5px; flex-wrap: wrap; }
+        .admin-btn { background: #e11d48; color: white; border: 1px solid rgba(255,255,255,0.2); padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 0.75rem; font-weight: bold; }
 
-        /* الرسائل */
         .chat-messages { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
-        .message { max-width: 75%; padding: 10px 14px; border-radius: 12px; font-size: 0.95rem; line-height: 1.4; display: flex; flex-direction: column; position: relative; }
+        .message { max-width: 75%; padding: 10px 14px; border-radius: 12px; font-size: 0.95rem; line-height: 1.4; display: flex; flex-direction: column; }
         .message .sender { font-size: 0.75rem; font-weight: bold; margin-bottom: 4px; opacity: 0.7; }
         
         .message.sent { background: #0284c7; color: #fff; align-self: flex-start; border-top-right-radius: 2px; }
@@ -45,46 +38,44 @@
         .message.owner { background: #e11d48; color: #fff; align-self: flex-start; border-top-right-radius: 2px; font-weight: bold; box-shadow: 0 4px 12px rgba(225,29,72,0.3); }
         .message.system { background: #fef08a; color: #854d0e; align-self: center; text-align: center; border-radius: 6px; font-size: 0.85rem; font-weight: 500; padding: 5px 10px; }
 
-        /* حقل الإرسال */
         .chat-input-area { display: flex; padding: 15px; background: #1e293b; gap: 10px; border-top: 1px solid rgba(255,255,255,0.05); }
         .chat-input { flex: 1; padding: 12px 18px; border: 1px solid #475569; border-radius: 25px; background: #0f172a; color: #fff; outline: none; font-size: 0.95rem; }
         .send-btn { background: #0284c7; color: white; border: none; padding: 0 25px; border-radius: 25px; cursor: pointer; font-weight: bold; }
         .send-btn.owner-mode { background: #e11d48; }
     </style>
+    <!-- استدعاء ملف الاتصال الشبكي أونلاين من السيرفر -->
+    <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
 
-<!-- 1. شاشة الدخولية -->
 <div id="loginScreen">
-    <h2>✨ شات غرف كرامه ✨</h2>
-    <input type="text" class="login-input" id="usernameInput" placeholder="أدخل اسمك المستعار هنا..." maxlength="15">
-    <button class="login-btn" onclick="enterChatNow()">دخول الدردشة</button>
+    <h2>✨ شات غرف كرامه السحابي ✨</h2>
+    <input type="text" class="login-input" id="usernameInput" placeholder="أدخل اسمك المستعار..." maxlength="15">
+    <button class="login-btn" onclick="connectToServer()">دخول الدردشة</button>
 </div>
 
-<!-- 2. واجهة التطبيق الرئيسي والغرف -->
 <div id="appScreen">
     <div class="sidebar">
         <h3>🚪 غرف الدردشة</h3>
-        <button class="room-btn karama-special active" onclick="switchRoom('غرفة كرامه الخـاصة', this)">👑 غرفة كرامه الخاصة</button>
-        <button class="room-btn" onclick="switchRoom('غرفة المحادثة العامة', this)">💬 الغرفة العامة</button>
-        <button class="room-btn" onclick="switchRoom('غرفة التسلية والمسابقات', this)">🎮 المسابقات والتسلية</button>
+        <button class="room-btn karama-special active" onclick="switchRoom('غرفة كرامه الخاصة', this)">👑 غرفة كرامه الخاصة</button>
+        <button class="room-btn" onclick="switchRoom('الغرفة العامة', this)">💬 الغرفة العامة</button>
+        <button class="room-btn" onclick="switchRoom('غرفة المسابقات والتسلية', this)">🎮 المسابقات والتسلية</button>
     </div>
 
     <div class="chat-area">
         <div class="chat-header" id="chatHeader">👑 غرفة كرامه الخاصة</div>
         
-        <!-- لوحة التحكم الكاملة لكرامه (مسح، قفل، كتم، طرد وحظر) -->
+        <!-- لوحة التحكم الكاملة لكرامه عبر السيرفر -->
         <div id="adminPanel">
-            <button class="admin-btn" onclick="adminAction('clear')">🧹 مسح الشات</button>
-            <button class="admin-btn" onclick="adminAction('lock')">🔒 قفل/فتح الغرفة</button>
-            <button class="admin-btn" onclick="adminAction('mute')">🔇 كتم مستخدم</button>
-            <button class="admin-btn" onclick="adminAction('kick')">🚷 طرد/حظر مستخدم</button>
-            <button class="admin-btn" onclick="adminAction('alert')">📢 تنبيه عام للكل</button>
+            <button class="admin-btn" onclick="sendAdmin('clear')">🧹 مسح الشات</button>
+            <button class="admin-btn" onclick="sendAdmin('lock')">🔒 قفل/فتح الكتابة</button>
+            <button class="admin-btn" onclick="sendAdmin('mute')">🔇 كتم مستخدم</button>
+            <button class="admin-btn" onclick="sendAdmin('unmute')">🔊 فك كتم</button>
+            <button class="admin-btn" onclick="sendAdmin('kick')">🚷 طرد وحظر نِهائي</button>
+            <button class="admin-btn" onclick="sendAdmin('alert')">📢 تنبيه للكل</button>
         </div>
 
-        <div class="chat-messages" id="chatMessages">
-            <div class="message system"><span class="sender">النظام</span> مرحباً بك في غرف الدردشة. لتفعيل صلاحيات المالك، اكتب الكود السري الخاص بك (12233) في حقل النص واضغط إرسال.</div>
-        </div>
+        <div class="chat-messages" id="chatMessages"></div>
 
         <div class="chat-input-area">
             <input type="text" class="chat-input" id="chatInput" placeholder="اكتب رسالتك هنا..." autocomplete="off">
@@ -94,78 +85,89 @@
 </div>
 
 <script>
-    let currentRoom = "غرفة كرامه الخـاصة";
-    let isOwner = false;
-    let isLocked = false;
+    let socket;
     let nickname = "";
-    let isMuted = false;
-    let broadcastChannel;
 
-    const loginScreen = document.getElementById('loginScreen');
-    const appScreen = document.getElementById('appScreen');
-    const chatMessages = document.getElementById('chatMessages');
-    const chatInput = document.getElementById('chatInput');
-    const sendBtn = document.getElementById('sendBtn');
-    const chatHeader = document.getElementById('chatHeader');
-    const adminPanel = document.getElementById('adminPanel');
-
-    function enterChatNow() {
+    function connectToServer() {
         const userVal = document.getElementById('usernameInput').value.trim();
-        if(userVal === "") { 
-            alert("الرجاء كتابة اسم أولاً للدخول!"); 
-            return; 
-        }
-        // التحقق من الحظر المحلي
-        if(localStorage.getItem('banned_' + userVal)) {
-            alert("❌ عذراً، لقد تم حظرك من قِبل المالك كرامه!");
+        if(!userVal) { alert("الرجاء كتابة اسم!"); return; }
+        nickname = userVal;
+
+        // الاتصال المباشر بالسيرفر أونلاين
+        socket = io();
+
+        socket.emit('checkLogin', { username: nickname });
+
+        socket.on('authResult', (res) => {
+            if(res.success) {
+                document.getElementById('loginScreen').style.display = "none";
+                document.getElementById('appScreen').style.display = "flex";
+                initSocketListeners();
+            } else {
+                alert("❌ تم طردك وحظرك نهائياً من قِبل المالك كرامه لا يمكنك الدخول!");
+            }
+        });
+    }
+
+    function initSocketListeners() {
+        socket.on('newMessage', (data) => {
+            let msgClass = 'received';
+            if (data.sender === nickname || (nickname === "👑 المالك كرامه" && data.sender === "👑 المالك كرامه")) msgClass = 'sent';
+            if (data.sender === "👑 المالك كرامه") msgClass = 'owner';
+            if (data.sender === "النظام" || data.sender.startsWith("📢")) msgClass = 'system';
+
+            const div = document.createElement('div');
+            div.classList.add('message', msgClass);
+            div.innerHTML = `<span class="sender">${data.sender}</span>${data.text}`;
+            document.getElementById('chatMessages').appendChild(div);
+            document.getElementById('chatMessages').scrollTop = document.getElementById('chatMessages').scrollHeight;
+        });
+
+        socket.on('ownerVerified', (res) => {
+            if(res.success) {
+                nickname = res.name;
+                document.getElementById('chatHeader').classList.add('owner-mode');
+                document.getElementById('sendBtn').classList.add('owner-mode');
+                document.getElementById('adminPanel').style.display = 'flex';
+                document.getElementById('chatHeader').textContent = `👑 غرفة كرامه الخاصة (لوحة المالك نشطة)`;
+            }
+        });
+
+        socket.on('roomChanged', (roomName) => {
+            document.getElementById('chatHeader').textContent = nickname === "👑 المالك كرامه" ? `👑 ${roomName} (لوحة المالك نشطة)` : roomName;
+            document.getElementById('chatMessages').innerHTML = `<div class="message system"><span class="sender">النظام</span> انتقلت إلى ${roomName}</div>`;
+        });
+
+        socket.on('adminCommand', (data) => {
+            if(data.action === 'clear') document.getElementById('chatMessages').innerHTML = '';
+            if(data.action === 'banned') { alert("❌ لقد قام المالك كرامه بطردك وحظرك من السيرفر!"); location.reload(); }
+        });
+    }
+
+    function switchRoom(roomName, btn) {
+        if(!socket) return;
+        document.querySelectorAll('.room-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        socket.emit('joinRoom', roomName);
+    }
+
+    function handleSend() {
+        const text = document.getElementById('chatInput').value.trim();
+        if(!text) return;
+
+        if(text === "12233") {
+            socket.emit('verifyOwner', text);
+            document.getElementById('chatInput').value = '';
             return;
         }
 
-        nickname = userVal;
-        loginScreen.style.display = "none";
-        appScreen.style.display = "flex";
+        socket.emit('sendMessage', { text: text });
+        document.getElementById('chatInput').value = '';
+    }
+
+    function sendAdmin(action) {
+        if(action === 'alert') {
+            const txt = prompt("أدخل نص التنبيه العام:");
+            if(txt) socket.emit('adminAction', { action: action, text: txt });
+        } else if(action === 'mute' || action === 'unmute' || action === 'kick') {
         
-        // تشغيل نظام البث السحابي المتبادل بين الأجهزة فوراً وبدون سيرفر
-        initGlobalNetwork();
-    }
-
-    // تهيئة نظام شبكي موحد للربط بين جميع الأجهزة المفتوحة أونلاين فوراً
-    function initGlobalNetwork() {
-        broadcastChannel = new BroadcastChannel('karama_global_network_channel');
-        
-        // إشعار الآخرين بدخول مستخدم جديد
-        broadcastChannel.postMessage({ room: currentRoom, action: 'join', sender: nickname });
-
-        // استقبال الرسائل والإجراءات من بقية الأجهزة
-        broadcastChannel.onmessage = (event) => {
-            const data = event.data;
-            
-            // تطبيق الأوامر الإدارية لكرامه فوراً عند المتلقين
-            if (data.action === 'clear' && data.room === currentRoom) { chatMessages.innerHTML = ''; return; }
-            if (data.action === 'lock' && data.room === currentRoom) { isLocked = data.status; return; }
-            if (data.action === 'mute' && data.target === nickname) { isMuted = data.status; alert(data.status ? "🔇 تم كتمك من قِبل المالك كرامه!" : "🔊 تم إلغاء كتمك من قِبل المالك كرامه."); return; }
-            if (data.action === 'kick' && data.target === nickname) { 
-                localStorage.setItem('banned_' + nickname, true);
-                alert("🚷 تم طردك وحظرك نهائياً من قِبل المالك كرامه!"); 
-                location.reload(); 
-                return; 
-            }
-
-            // عرض الرسائل العادية والمشتركة بين الجميع في نفس الغرفة
-            if(data.room === currentRoom) {
-                addMessage(data.sender, data.text, data.msgType);
-            }
-        };
-    }
-
-    function switchRoom(roomName, btnElement) {
-        currentRoom = roomName;
-        chatHeader.textContent = isOwner ? `👑 ${roomName} (وضع المالك نشط)` : roomName;
-        document.querySelectorAll('.room-btn').forEach(btn => btn.classList.remove('active'));
-        btnElement.classList.add('active');
-        chatMessages.innerHTML = `<div class="message system"><span class="sender">النظام</span> لقد انتقلت إلى (${roomName})</div>`;
-    }
-
-    function addMessage(sender, text, type) {
-        const div = document.createElement('div');
-        div.classList.add('message', type);
